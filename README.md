@@ -1,5 +1,5 @@
 # S2/3Aqua 
-(Sentinel-2/3 Synthetic Aquatic Reflectance Bands) <img src="img/s23aqua.svg" width="250" align="right" />
+# (Sentinel-2/3 Synthetic Aquatic Reflectance Bands) <img src="img/s23aqua.svg" width="250" align="right" />
 ![Version](https://img.shields.io/badge/version-v0.0.1-yellow)
 ![Language](https://img.shields.io/badge/language-Python-blue)
 
