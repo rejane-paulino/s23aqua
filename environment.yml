@@ -1,4 +1,4 @@
-name: s23aqua-env
+name: s23aqua
 channels:
   - anaconda
   - conda-forge
