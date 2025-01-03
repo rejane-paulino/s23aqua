@@ -14,6 +14,8 @@ To run the S2/3Aqua, it is necessary a suitable use of the environment `s23aqua`
             cd into the s23aqua directory
             python api.py
 
+> S2/3Aqua can also be run through the s23aqua.ipynb file.
+
 ## Input Parameters:
 The S2/3Aqua requires four input data: `path_MSI`, `path_OLCI`, `roi`, `dest`.    
 
@@ -22,7 +24,7 @@ The S2/3Aqua requires four input data: `path_MSI`, `path_OLCI`, `roi`, `dest`.
 * *roi:* path with shapefile from region-of-interest;
 * *dest:* output directory.
 
-> The input parameters must be manually filled in `api.py`.
+> The input parameters must be manually configured in the core.py or s23aqua.ipynb file.
 
 ## Output Parameters:
 Eight spectral bands at 10-meters (.TIFF) and a file MTD.xml are available in *dest*: `S23AQUA_YYYYMMDD_XXXX_OaXX.tif` and `MTD.xml`.
