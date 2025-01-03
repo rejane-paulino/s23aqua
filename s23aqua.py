@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 
-from tqdm import tqdm
 import shutil
+from tqdm import tqdm
 
 import auxf
 from metadata import Metadata
@@ -10,6 +10,7 @@ from sampling.samples import Samples
 from sampling.LUT import LUT
 from training import Training
 from predict import Predict
+
 
 class S23aqua:
 
@@ -41,3 +42,7 @@ class S23aqua:
         auxf.meta(meta, meta.dest)
         # Removes the tempdir:
         shutil.rmtree(tempdir)
+
+
+
+

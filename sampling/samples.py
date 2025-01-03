@@ -1,12 +1,12 @@
 # -*- mode: python -*-
 
 import os
+import glob
+import numpy as np
+import pandas as pd
+import geopandas as gpd
 from osgeo import osr, gdal, ogr
 gdal.UseExceptions()
-import pandas as pd
-import numpy as np
-import glob
-import geopandas as gpd
 from shapely.geometry import Point
 from sklearn.cluster import KMeans
 
@@ -23,16 +23,18 @@ class Samples:
         Runs the random sampling process.
         """
         # Creating new directories:
-        pathxcut = auxf.newdirectory(self.parameters.dest + '/temp', 'smoothed_cutMSI')
+        pathxcut = auxf.newdirectory(self.parameters.dest + '/temp', 'resampled_cutMSI')
         pathxcluster = auxf.newdirectory(self.parameters.dest + '/temp', 'kmeans')
         # Creating a buffer -300-meter:
         buffer_300m = self.buffer(self.parameters.roi, self.parameters.dest + '/temp/shapefiles', self.parameters.geocode)
         # Cutting the bands:
-        paths = [band for band in glob.glob(os.path.join(self.parameters.dest + '/temp/resampled', '*.tif')) if 'B02' in band or 'B03' in band or 'B04' in band or 'B05' in band or 'watermask' in band]
+        paths = [os.path.normpath(band) for band in glob.glob(os.path.join(self.parameters.dest + '/temp/resampled', '*.tif')) if 'B02' in band or 'B03' in band or 'B04' in band or 'B05' in band]
+        paths.sort()
+        paths = paths + [os.path.normpath(mask) for mask in glob.glob(os.path.join(self.parameters.dest + '/temp/resampled', '*.tif')) if 'watermask' in mask]
         for i, j in zip(paths, self.parameters.MSIBAND + ['watermask']):
             auxf.cutbands(self.parameters.dest + '/temp/shapefiles/roi_buffer.shp', i, j, pathxcut)
         # Loading the bands:
-        array = auxf.loadarray([band for band in glob.glob(os.path.join(pathxcut, '*.tif'))], self.parameters.MSIBAND + ['watermask'])
+        array = auxf.loadarray([os.path.normpath(band) for band in glob.glob(os.path.join(pathxcut, '*.tif'))], self.parameters.MSIBAND + ['watermask'])
         # Generating the clusters:
         self.kmeanscluster(array, pathxcut + '/B02.tif', pathxcluster)
         # Converting raster to shapefile:
@@ -41,6 +43,7 @@ class Samples:
         grid_points = self.gridpoints(buffer_300m, self.parameters.geocode, self.parameters.dest + '/temp/shapefiles')
         # Selecting points per class and validation and training points:
         self.randompointsintoclasters(grid_points, self.parameters.dest + '/temp/shapefiles/kmeans.shp', buffer_300m, self.parameters.geocode, self.parameters.dest + '/temp/shapefiles')
+
 
     def buffer(self, roi: str, dest: str, crs):
         """
@@ -52,6 +55,7 @@ class Samples:
         buffered.to_file(dest + '/roi_buffer.shp')
         return buffered
 
+
     def kmeanscluster(self, array: dict, reference: str, dest: str):
         """
         Generates clusters by k-means.
@@ -60,7 +64,7 @@ class Samples:
         maskedarray = {}
         for i in array:
             if 'watermask' not in i:
-                wmasked = array[i] * array['watermask']
+                wmasked = array[i] * np.where(array['watermask'] <= self.parameters.nodata, 0, array['watermask']) # used to remove the remaining cloud effect.
                 maskedarray[i] = wmasked * np.where(array['B03'] < 0, 0, 1) # used to mask nan pixels inside of waterbody. It is necessary when the image does not cover all the waterbody.
         # Stacks the bands:
         x, y = maskedarray['B02'].shape
@@ -85,6 +89,7 @@ class Samples:
         auxf.export(segmented_image, 'kmeans', reference, dest)
         return None
 
+
     def rasterToshapefile(self, raster, crs_string: str, dest: str):
         """
         Converts raster (.TIFF) to shapefile (.shp).
@@ -102,6 +107,7 @@ class Samples:
         dst_field = dst_layer.GetLayerDefn().GetFieldIndex("data")
         gdal.Polygonize(srcband, None, dst_layer, dst_field, [], callback=None)
         return None
+
 
     def gridpoints(self, buffer, crs_string, dest: str):
         """
@@ -122,6 +128,7 @@ class Samples:
         gridpoints = gpd.GeoDataFrame(geometry=geometry, crs=crs_string).reset_index(drop=True)
         gridpoints.to_file(dest + '/gridpoint.shp')
         return gridpoints
+
 
     def randompointsintoclasters(self, gridpoints, shapefile_clusters, buffer, epsg_string: str, dest: str):
         """
@@ -155,18 +162,3 @@ class Samples:
         # Save as shapefile:
         train.to_file(dest + '/pointsxtrain.shp')
         validation.to_file(dest + '/pointsxvalidation.shp')
-
-
-# from metadata import Metadata
-
-
-# path_MSI = r'/Volumes/rsp/s23aqua_validation/S2A_MSIL1C_20210809T131251_N0500_R138_T23KLP_20230116T033833.SAFE'
-# path_OLCI = r'/Volumes/rsp/s23aqua_validation/S3A_OL_1_EFR____20210809T121855_20210809T122155_20210810T171811_0179_075_066_3420_LN1_O_NT_002.SEN3'
-# roi = r'/Volumes/rsp/s23aqua_validation/ROI/roi_billings_4326.shp'
-# dest = r'/Volumes/rsp/s23aqua_validation/out'
-#
-# a = Metadata(path_MSI, path_OLCI, roi, dest)
-# a.run()
-#
-# b = SAMPLES(a)
-# b.run()

@@ -1,8 +1,10 @@
 # -*- mode: python -*-
 
+import os
 import pathlib
-from osgeo import gdal
 import datetime
+import numpy as np
+from osgeo import gdal
 import xml.etree.ElementTree as ET
 
 
@@ -30,15 +32,20 @@ def cutbands(path_shapefile: str, path_image: str, index: str, dest: str) -> Non
     """
     Cuts the images.
     """
+    temp_file = os.path.join(dest, f"temp_{index}.tif")
+    final_file = os.path.join(dest, f"{index}.tif")
     kwargs = {'cutlineDSName': 'True', 'dstNodata': 'np.nan', '-to': 'Float32'}
-    gdal.Warp(dest + '/' + index + '.tif', path_image,
+    gdal.Warp(temp_file, path_image,
               cutlineDSName=path_shapefile,
               cropToCutline=True,
               dstNodata=-9999)
+    if os.path.exists(final_file):
+        os.remove(final_file)
+    os.rename(temp_file, final_file)
     return None
 
 
-def export(array: float, id: str, reference: str, dest: str) -> None:
+def export(array: np.ndarray, id: str, reference: str, dest: str) -> None:
     """
     Export the images to dest.
     """
@@ -61,9 +68,12 @@ def export(array: float, id: str, reference: str, dest: str) -> None:
     # copying the projection information pre-existing
     dataset_output.SetProjection(dataset_reference.GetProjectionRef())
     # writing array data in band
-    dataset_output.GetRasterBand(1).WriteArray(array)
-    # solve values
-    test = dataset_output.FlushCache()
+    band = dataset_output.GetRasterBand(1)
+    band.WriteArray(array)
+    # setting the NoData value
+    band.SetNoDataValue(-9999)
+    # solve values:
+    dataset_output.FlushCache()
     # close dataset
     dataset_output = None
     return None
@@ -114,7 +124,7 @@ def meta(meta, dest: str) -> None:
         'Outputdata': {
             'path': meta.dest,
             'pixel_value': 'surface_reflectance',
-            'NaN_value': 'nan',
+            'NaN_value': '-9999',
             'file_format': 'TIFF',
             'datetime_processing': current_datetime.isoformat()
         }
@@ -131,4 +141,3 @@ def meta(meta, dest: str) -> None:
     tree = ET.ElementTree(root)
     tree.write(dest + '/' + 'MTD.xml', encoding='utf-8', xml_declaration=True)
     return None
-
