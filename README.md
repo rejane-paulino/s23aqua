@@ -33,4 +33,5 @@ Eight spectral bands at 10-meters (.TIFF) and a file MTD.xml are available in *d
 
 * S2/3Aqua can present time-consuming for large waterbodies. 
 
-
+## Reference:
+Paulino, R.S. et al. Generation of robust 10-m Sentinel-2/3 synthetic aquatic reflectance bands over inland waters. Remote Sensing of Environment 318, 114593, 2025. https://doi.org/10.1016/j.rse.2024.114593   
